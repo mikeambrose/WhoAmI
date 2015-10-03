@@ -17,7 +17,7 @@ def getPosition(lane,role):
     else:
         return 'NONE'
 
-def filterMatches(matches, positions=None, champs=None, time=None):
+def filterMatches(matches, positions=None, champs=None, timeRange=None):
     """
     Given the set of matches, returns the match IDs under restrictions of time, roles, and champions
 
@@ -27,7 +27,7 @@ def filterMatches(matches, positions=None, champs=None, time=None):
         champs - set of champion ids
             if None, no restriction
 
-        time - filters out everything before a certain time
+        time - filters out everything not in a certain time range
 
         Returns a list of matchIDs
     """
@@ -39,8 +39,8 @@ def filterMatches(matches, positions=None, champs=None, time=None):
         if champs != None:
             if match['champion'] not in champs:
                 continue
-        if time != None:
-            if int(match['timestamp']) < time:
+        if timeRange != None:
+            if not (timeRange[0] <= int(match['timestamp']) < timeRange[1]):
                 continue
         matchIDs.append(match['matchId'])
     return matchIDs

@@ -8,7 +8,7 @@ pid = 19810260
 oid = 47290381
 
 CALLS_PER_10S = 10
-CALLS_PER_5M = 500
+CALLS_PER_10M = 500
 #extra delay when we're near the limit
 EXTRA_DELAY = 0.1
 
@@ -50,19 +50,19 @@ class APICalls:
         while len(self._calls) != 0:
             timeDelta = (currentTime - self._calls[0]).seconds
             #if the call occurred more than 5 minutes ago, remove it
-            if timeDelta > 300:
+            if timeDelta > 600:
                 del self._calls[0]
             #otherwise we've eliminated all the oldest calls
             else:
                 break
 
         #check how many calls have been made in 5 minutes
-        if len(self._calls) >= CALLS_PER_5M:
+        if len(self._calls) >= CALLS_PER_10M:
             #the time we wait is 5 minutes minus the time we've already waited
             #plus a delay to make sure computation/transmission times don't screw things up
-            timeWait = 300 - (currentTime - self._calls[0]).seconds + EXTRA_DELAY
+            timeWait = 600 - (currentTime - self._calls[0]).seconds + EXTRA_DELAY
             if debug:
-                print "sleeping for {0} seconds until 5 minute restriction is up".format(timeWait)
+                print "sleeping for {0} seconds until 10 minute restriction is up".format(timeWait)
             else:
                 time.sleep(timeWait)
             timeWaited += timeWait
@@ -128,5 +128,11 @@ class APICalls:
         self._callCheck(); self._addCall()
         fetchLink = "https://na.api.pvp.net/api/lol/na/v2.2/match/{matchid}?includeTimeline=false&api_key={apikey}"\
                         .format(matchid=matchID,apikey=self._apikey)
-        matchInfo = json.load(urllib2.urlopen(fetchLink))
+        try:
+            matchInfo = json.load(urllib2.urlopen(fetchLink))
+        except Exception:
+            print "error occurred - was the program run without waiting the full amount of time?"
+            time.sleep(600)
+            matchInfo = json.load(urllib2.urlopen(fetchLink))
+
         return matchInfo
