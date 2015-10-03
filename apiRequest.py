@@ -32,8 +32,9 @@ class APICalls:
         #added to by _addCall
         self._calls = [] 
         self._apikey = apikey
+        self.idToChamp, self.champToID = self.getChampionIDDicts()
 
-    def _callCheck(self,debug=True):
+    def _callCheck(self,debug=False):
         """
         Waits for as long as needed to execute a call
 
@@ -108,9 +109,9 @@ class APICalls:
         self._callCheck(); self._addCall()
         fetchLink = "https://na.api.pvp.net/api/lol/na/v1.4/summoner/by-name/{name}?api_key={apikey}"\
                         .format(name=name,apikey=self._apikey)
-        summonerInfo = json.load(urllib2.urlopen(fetchLink))
+        summonerInfo = json.load(urllib2.urlopen(fetchLink))[name]
         return summonerInfo['id']
-
+    
     def getChampionIDDicts(self):
         #no need to run _callCheck() or _addCall() because static calls don't count
         fetchLink = "https://global.api.pvp.net/api/lol/static-data/na/v1.2/champion?api_key={apikey}"\
@@ -119,7 +120,13 @@ class APICalls:
         idToChamp = {}
         champToID = {}
         for champ in champInfo:
-            champToID[champ] = champInfo[champ][id]
-            idToChamp[champInfo[champ][id]] = champ
+            champToID[champ] = champInfo[champ]['id']
+            idToChamp[champInfo[champ]['id']] = champ
         return idToChamp, champToID
 
+    def getMatch(self,matchID):
+        self._callCheck(); self._addCall()
+        fetchLink = "https://na.api.pvp.net/api/lol/na/v2.2/match/{matchid}?includeTimeline=false&api_key={apikey}"\
+                        .format(matchid=matchID,apikey=self._apikey)
+        matchInfo = json.load(urllib2.urlopen(fetchLink))
+        return matchInfo
