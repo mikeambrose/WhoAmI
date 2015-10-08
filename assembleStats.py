@@ -1,14 +1,22 @@
 import apiRequest
 import getStats
 import time
+import datetime
+import caching
+import visualizeStats
 
 API = apiRequest.APICalls(open('apikey.txt').read())
-name = 'penguin8r'
+name = 'fortis831'
 sid = API.getSID(name)
 matches = API.getMatchList(sid)
 gameDict = {}
 for match in matches:
     gameDict[match['matchId']] = None
+cachedMatches = caching.readCache(sid)
+if cachedMatches:
+    for match in cachedMatches:
+        assert match in gameDict
+        gameDict[match] = cachedMatches[match]
 def roleStats(sid,API,matches,gameDict):
     t = time.time()
     winrateDict = {}
@@ -35,9 +43,10 @@ def timeStats(sid,API,matches,gameDict,buckets=4):
     #every cutoff but the last one has a histogram bucket
     for i in range(len(cutoffs)-1):
         cutoff,nextCutoff = timestamps[cutoffs[i]],timestamps[cutoffs[i+1]]
-        print cutoff, nextCutoff
         histMatches = getStats.filterMatches(matches,timeRange=(cutoff,nextCutoff))
-        print len(histMatches)
         hist[datetime.datetime.fromtimestamp(cutoff/1000.0)] = getStats.getWinrate(API,gameDict,histMatches,sid)
     return hist
 
+timeHist = timeStats(sid,API,matches,gameDict,6)
+#caching.writeCache(sid,gameDict)
+visualizeStats.writeTimeOutput("output/testOutput.html",timeHist)

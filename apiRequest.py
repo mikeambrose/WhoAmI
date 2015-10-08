@@ -9,6 +9,8 @@ oid = 47290381
 
 CALLS_PER_10S = 10
 CALLS_PER_10M = 500
+LONG_TIME = 610
+SHORT_TIME = 11
 #extra delay when we're near the limit
 EXTRA_DELAY = 0.1
 
@@ -16,7 +18,7 @@ EXTRA_DELAY = 0.1
 class APICalls:
     """
     A class used to respect the API limits of Riot Games
-    The constants PER10S and PER5M reflect how many calls can occur during the time period 
+    The constants PER10S and PER10M reflect how many calls can occur during the time period 
     If a call cannot be made, the program will halt until it can be made
     Each API call must being with a self._callCheck() and self._addCall()
 
@@ -44,13 +46,14 @@ class APICalls:
             and again, if not, waits until the call closest to 10s ago times out
         Returns the amount of time waited
         """
+        print self._calls, len(self._calls)
         timeWaited = 0
-        #pruning last 5 minutes
+        #pruning last 10 minutes
         currentTime = datetime.datetime.now()
         while len(self._calls) != 0:
             timeDelta = (currentTime - self._calls[0]).seconds
             #if the call occurred more than 5 minutes ago, remove it
-            if timeDelta > 600:
+            if timeDelta > LONG_TIME:
                 del self._calls[0]
             #otherwise we've eliminated all the oldest calls
             else:
@@ -60,7 +63,7 @@ class APICalls:
         if len(self._calls) >= CALLS_PER_10M:
             #the time we wait is 5 minutes minus the time we've already waited
             #plus a delay to make sure computation/transmission times don't screw things up
-            timeWait = 600 - (currentTime - self._calls[0]).seconds + EXTRA_DELAY
+            timeWait = LONG_TIME - (currentTime - self._calls[0]).seconds + EXTRA_DELAY
             if debug:
                 print "sleeping for {0} seconds until 10 minute restriction is up".format(timeWait)
             else:
@@ -73,7 +76,7 @@ class APICalls:
         closest10sCall = None
         #iterate through calls backwards
         for i in range(-1,-len(self._calls)-1,-1):
-            if (currentTime - self._calls[i]).seconds < 10:
+            if (currentTime - self._calls[i]).seconds < SHORT_TIME:
                 last10sCalls += 1
                 closest10sCall = self._calls[i]
             else:
@@ -83,7 +86,7 @@ class APICalls:
         if last10sCalls >= CALLS_PER_10S:
             #the time we wait is 10 seconds minus the time we've already waited
             #plus a delay to make sure computation/transmission times don't screw things up
-            timeWait = 10 - (currentTime-closest10sCall).seconds + EXTRA_DELAY
+            timeWait = SHORT_TIME - (currentTime-closest10sCall).seconds + EXTRA_DELAY
             if debug:
                 print "sleeping for {0} seconds until 10 second restriction is up".format(timeWait)
             else:
@@ -132,7 +135,7 @@ class APICalls:
             matchInfo = json.load(urllib2.urlopen(fetchLink))
         except Exception:
             print "error occurred - was the program run without waiting the full amount of time?"
-            time.sleep(600)
+            time.sleep(LONG_TIME)
             matchInfo = json.load(urllib2.urlopen(fetchLink))
 
         return matchInfo
